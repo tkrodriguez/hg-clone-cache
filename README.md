@@ -1,5 +1,6 @@
 # hg-clone-cache
-Patch mercurial `hg clone` to first check a local cache before hitting network
+
+Patch mercurial `hg clone` to first check a local cache before hitting network. Adds the command `hg cache <url>` to add (remote) repos to the cache.
 
 ## Warning #1
 
@@ -47,3 +48,9 @@ Put it somewhere on your pythonpath (e.g. by cloning this repository), and [enab
 
     [extensions]
     clonecache = ~/code/hg-clone-cache/clonecache.py
+
+### Why only remote repos?
+
+Because the caching keys off the URL, and local paths can be relative. If I weren't so lazy I would expand them 
+to full URLs (i.e. `file://` and absolute paths) and everything would Just Work, but I've scratched my itch. Pull
+requests welcome.
