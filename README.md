@@ -1,6 +1,6 @@
 # hg-clone-cache
 
-Patch mercurial `hg clone` to first check a local cache before hitting network. Adds the command `hg cache <url>` to add (remote) repos to the cache.
+Patch mercurial `hg clone` to first check a local cache before hitting network. Adds the command `hg cache <url>` to add (remote) repos to the cache, and `hg cache --update` to pull all cache entries.
 
 ## Warning #1
 
