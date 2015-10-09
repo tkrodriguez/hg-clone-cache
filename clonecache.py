@@ -12,11 +12,11 @@ from mercurial import cmdutil, commands, hg
 from mercurial import ui as uimod
 from mercurial.util import url
 from mercurial.i18n import _
-import hashlib
+import urllib
 import os.path
 
-testedwith = '2.9'
-__version__ = '0.0.3'
+testedwith = '3.2'
+__version__ = '0.0.4'
 
 
 cmdtable = {}
@@ -31,24 +31,26 @@ CACHE = os.path.expanduser('~/.hg.cache')
     [('', 'update', None, _('update all cached repos')),
     ],
     _('[OPTION]... [SOURCE]'),
+    norepo=True
 )
 def cache_cmd(ui, source=None, **opts):
     if source is None and not opts.get('update'):
         raise hg.util.Abort(_("either SOURCE or --update is required"))
     if opts.get('update'):
         for repo_d in os.listdir(CACHE):
-            ui.status('updating cache {}\n'.format(repo_d))
-            cache_peer = hg.peer(ui, {}, os.path.join(CACHE, repo_d))
-            commands.pull(cache_peer.ui, cache_peer.local())
+            if source is None or repo_d == url_to_filename(source):
+                ui.status('updating cache {}\n'.format(repo_d))
+                cache_peer = hg.peer(ui, {}, os.path.join(CACHE, repo_d))
+                commands.pull(cache_peer.ui, cache_peer.local(), noupdate=True)
     else:
         if hg.islocal(source):
             raise hg.util.Abort(_("not caching local repo {}".format(source)))
-        cache_d = os.path.join(CACHE, url_to_hex(source))
-        ui.status(_('cachine {} to {}\n'.format(source, cache_d)))
-        commands.clone(ui, source, cache_d)
+        cache_d = os.path.join(CACHE, url_to_filename(source))
+        ui.status(_('caching {} to {}\n'.format(source, cache_d)))
+        commands.clone(ui, source, cache_d, noupdate=True)
 
 
-@command('clone',
+@command('^clone',
     [('U', 'noupdate', None,
      _('the clone will include an empty working copy (only a repository)')),
     ('u', 'updaterev', '', _('revision, tag or branch to check out'), _('REV')),
@@ -56,26 +58,30 @@ def cache_cmd(ui, source=None, **opts):
     ('b', 'branch', [], _('clone only the specified branch'), _('BRANCH')),
     ('', 'pull', None, _('use pull protocol to copy metadata')),
     ('', 'uncompressed', None, _('use uncompressed transfer (fast over LAN)')),
+    ('', 'nocache', None, _('Ignore the cache')),
     ] + commands.remoteopts,
-    _('[OPTION]... SOURCE [DEST]'))
+    _('[OPTION]... SOURCE [DEST]'),
+    norepo=True)
 def clone_cache_cmd(ui, source, dest=None, **opts):
     source_url = url(source)
     if source_url.fragment is not None:
         raise ValueError('Someone is being clever! We are not clever. Bail.')
 
     orig_source = source
-    cache_source = os.path.join(CACHE, url_to_hex(source))
-    was_cached = os.path.exists(cache_source)
-    if was_cached:
-        ui.status('cloning from cache {}\n'.format(cache_source))
-        clone_source = cache_source
-        if dest is None:
-            dest = hg.defaultdest(source)
-    else:
-        ui.status('no cache found at {}, cloning from source {}\n'.format(
-            cache_source, source))
-        clone_source = source
-
+    cache_source = os.path.join(CACHE, url_to_filename(source))
+    was_cached = False
+    if not opts.get('nocache'):
+        was_cached = os.path.exists(cache_source)
+        if was_cached:
+            ui.status('cloning from cache {}\n'.format(cache_source))
+            clone_source = cache_source
+            if dest is None:
+                dest = hg.defaultdest(source)
+        else:
+            ui.status('no cache found at {}, cloning from source {}\n'.format(
+                cache_source, source))
+            clone_source = source
+    
     if opts.get('noupdate') and opts.get('updaterev'):
         raise util.Abort(_("cannot specify both --noupdate and --updaterev"))
 
@@ -119,9 +125,5 @@ def clone_cache_cmd(ui, source, dest=None, **opts):
     return False
 
 
-def url_to_hex(url):
-    return hashlib.md5(url).hexdigest()
-
-# mercurial 2.9 method for marking commands as "doesn't need a repo"
-# ugh ugh ugh ugh ugh (3.2 does this better)
-commands.norepo += ' cache clonecache'
+def url_to_filename(url):
+    return urllib.quote_plus(url)
