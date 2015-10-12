@@ -50,7 +50,7 @@ def cache_cmd(ui, source=None, **opts):
         commands.clone(ui, source, cache_d, noupdate=True)
 
 
-@command('^clone',
+@command('clone',
     [('U', 'noupdate', None,
      _('the clone will include an empty working copy (only a repository)')),
     ('u', 'updaterev', '', _('revision, tag or branch to check out'), _('REV')),
@@ -70,6 +70,7 @@ def clone_cache_cmd(ui, source, dest=None, **opts):
     orig_source = source
     cache_source = os.path.join(CACHE, url_to_filename(source))
     was_cached = False
+    clone_source = source
     if not opts.get('nocache'):
         was_cached = os.path.exists(cache_source)
         if was_cached:
@@ -80,7 +81,6 @@ def clone_cache_cmd(ui, source, dest=None, **opts):
         else:
             ui.status('no cache found at {}, cloning from source {}\n'.format(
                 cache_source, source))
-            clone_source = source
     
     if opts.get('noupdate') and opts.get('updaterev'):
         raise util.Abort(_("cannot specify both --noupdate and --updaterev"))
