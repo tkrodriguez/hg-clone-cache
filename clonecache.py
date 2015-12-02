@@ -79,6 +79,10 @@ def clone_cache_cmd(ui, source, dest=None, **opts):
             clone_source = cache_source
             if dest is None:
                 dest = hg.defaultdest(source)
+            if opts.get('rev'):
+                ui.status('updating cache {} to rev {}\n'.format(cache_source, opts.get('rev')))
+                cache_peer = hg.peer(ui, {}, cache_source)
+                commands.pull(cache_peer.ui, cache_peer.local(), noupdate=True, rev=opts.get('rev'))
         else:
             ui.status('no cache found at {}, cloning from source {}\n'.format(
                 cache_source, source))
