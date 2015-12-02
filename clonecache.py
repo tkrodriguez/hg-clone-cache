@@ -30,12 +30,13 @@ CACHE = os.path.expanduser('~/.hg.cache')
     'cache',
     [('', 'update', None, _('update all cached repos')),
     ],
-    _('[OPTION]... [SOURCE]'),
+    _('[OPTION]... [SOURCE]...'),
     norepo=True
 )
 def cache_cmd(ui, source=None, **opts):
     if source is None and not opts.get('update'):
         raise hg.util.Abort(_("either SOURCE or --update is required"))
+    print source
     if opts.get('update'):
         for repo_d in os.listdir(CACHE):
             if source is None or repo_d == url_to_filename(source):
